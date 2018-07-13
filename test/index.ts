@@ -6,7 +6,7 @@ import { RpsContext } from 'rpscript-interface';
 
 m.describe('exceljs', () => {
 
-  m.it('should able to perform excel IO', async function () {
+  m.xit('should able to perform excel IO', async function () {
     let TEST_XLSX = 'test/sampledata.xlsx';
     let WRITE_XLSX = 'test/sampledata_result.xlsx';
 
@@ -57,6 +57,35 @@ m.describe('exceljs', () => {
     cell.value = 1;
 
     await workbook.xlsx.writeFile(WRITE_XLSX);
+
+  }).timeout(0);
+
+  m.it('should append excel', async function () {
+    let TEST_XLSX = 'test/sampledata.xlsx';
+    let WRITE_XLSX = 'test/sampledata_result.xlsx';
+
+    if(fs.existsSync(WRITE_XLSX)) fs.unlinkSync(WRITE_XLSX);
+    
+    let ctx =new RpsContext;
+    let md = new RPSModule(ctx);
+
+    //LOAD WORKSHEET
+    let workbook = await md.readExcel(ctx,{},TEST_XLSX);
+
+    let salesorders = await md.getWS(ctx,{},'SalesOrders');
+    expect(salesorders).not.to.be.undefined;
+
+
+    await md.appendColumn(ctx,{},'SalesOrders','WonderFn',async function (row,count) {
+      return count;
+    });
+
+    await md.appendColumn(ctx,{formula:'A1'},'SalesOrders','WonderFormula');
+    await md.appendColumn(ctx,{formula:'A$col'},'SalesOrders','WonderFormula2');
+
+    //write to result
+    await workbook.xlsx.writeFile(WRITE_XLSX);
+
 
   }).timeout(0);
 

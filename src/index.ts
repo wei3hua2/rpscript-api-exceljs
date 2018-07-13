@@ -4,6 +4,7 @@
 
 import ExcelJS,{Workbook,Worksheet, AutoFilter,Row,Column, ColumnExtension, Cell} from 'exceljs';
 import {RpsContext,RpsModule,rpsAction} from 'rpscript-interface';
+import R from 'ramda';
 
 let MOD_ID = "exceljs"
 
@@ -74,11 +75,6 @@ export default class RPSModule {
     return ws;
   }
 
-  // @rpsAction({verbName:'excel-commit'})
-  // async commit(ctx:RpsContext,opts:Object) : Promise<void>{
-  //   let sheet = this.getWorksheet(ctx,sheetname);
-  //   return sheet.addRows(datas);
-  // }
 
   @rpsAction({verbName:'excel-auto-filter'})
   async  autofilter(ctx:RpsContext,opts:Object, sheetname:string|number,
@@ -139,15 +135,62 @@ export default class RPSModule {
     let sheet = this.getWorksheet(ctx,sheetname);
     return sheet.addRows(datas);
   }
+
   @rpsAction({verbName:'worksheet-append-column'})
   async appendColumn(ctx:RpsContext,opts:Object, 
-    sheetname:string|number, columnName:string, data:Array<any>) : Promise<void>{
+    sheetname:string|number, columnName:string, 
+    data?:string|number|Function|Array<any> ) : Promise<void>{
 
-    let sheet = this.getWorksheet(ctx,sheetname);
+    let formula = opts['formula'], numFmt = opts['numberFormat'], width = opts['width'];
+    let sheet:Worksheet = this.getWorksheet(ctx,sheetname);
+    let colPosition = sheet.actualColumnCount;
+
+    let result = [columnName];
+    result = result.concat(await this.setColumnData(sheet,data));
     
-    sheet.spliceColumns(sheet.actualColumnCount+1,0,data);
+    sheet.spliceColumns(colPosition+1,0,result);
 
+    //update formula
+    this.setFormula(sheet,formula);
+    
+    if(numFmt)
+      sheet.getColumn(colPosition).numFmt = numFmt;
+    
+    sheet.getColumn(colPosition).width = width || 20;
+    
     sheet.commit();
+  }
+
+  private async setColumnData (sheet:Worksheet,data?:string|number|Function|Array<any>) :Promise<Array<any>>{
+    let result = [];
+    if(typeof data==='string' || typeof data==='number')
+      result = result.concat(R.repeat(data,sheet.actualRowCount-1));
+
+    else if(typeof data==='function'){
+      for(var i =1;i<sheet.actualRowCount;i++){
+        let row = sheet.getRow(i);
+        let output = await data(row,i);
+        result.push(output);
+      }
+    }
+    return result;
+  }
+
+  private setFormula (sheet:Worksheet,formula?:string) :void {
+    if(formula){
+      for(var i =2;i<sheet.actualRowCount;i++){
+        let row = sheet.getRow(i);
+        let cell:Cell = row.getCell(sheet.actualColumnCount);
+        let rowIndex = cell.row, form ="";
+
+        if(formula.indexOf('$row') >= 0)
+          form = formula.replace(new RegExp('[$]row', 'g'), rowIndex);
+        else form = formula
+
+        cell.value = { formula: form, result: '?'};
+        row.commit();
+      }
+    }
   }
 
   @rpsAction({verbName:'export-excel-to-csv'})
@@ -157,23 +200,6 @@ export default class RPSModule {
     return workbook.csv.writeFile(filename)
   }
 
-  //get column
-  //each cell
-  // splice column
-  //get cell
-
-  //add row
-  //get row
-  //last row
-  //splice row
-  
-  //merge cells
-  //unmerge cells
-
-
-  //commit
-  //add page break
-  //add image
 
 
   private getCurrentWorkbook (ctx:RpsContext) :Workbook {
