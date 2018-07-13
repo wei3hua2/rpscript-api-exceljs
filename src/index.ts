@@ -158,7 +158,6 @@ export default class RPSModule {
     
     sheet.getColumn(colPosition).width = width || 20;
     
-    sheet.commit();
   }
 
   private async setColumnData (sheet:Worksheet,data?:string|number|Function|Array<any>) :Promise<Array<any>>{
