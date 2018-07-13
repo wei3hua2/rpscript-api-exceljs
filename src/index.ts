@@ -88,12 +88,34 @@ export default class RPSModule {
     return sheet.autoFilter;
   }
 
-  @rpsAction({verbName:'worksheet-get-headers'})
+  @rpsAction({verbName:'worksheet-add-headers'})
+  async addHeaders(ctx:RpsContext,opts:Object, sheetname:string|number, 
+    headers:string[]) : Promise<any>{
+      let sheet = this.getWorksheet(ctx,sheetname);
+      sheet.columns = R.map(h => {
+        return {header:h,key:h}
+      },headers);
+
+      return Promise.resolve(true);
+  }
+
+  @rpsAction({verbName:'worksheet-add-header'})
   async addHeader(ctx:RpsContext,opts:Object, sheetname:string|number, 
     header:string, key?:string, width?:number,outlineLevel?:number) : Promise<any>{
       let sheet = this.getWorksheet(ctx,sheetname);
+      sheet.columns = sheet.columns || [];
+      
+      // let h:any = {header:header};
+      // h.width = width ? width : 20;
+      // h.key = key ? key : header;
+      // h.outlineLevel = outlineLevel ? outlineLevel : 0;
+      
+      sheet.columns.push({
+        header:header, 
+        key:key ? key : header,
+        outlineLevel : outlineLevel ? outlineLevel : 0});
 
-      sheet.columns.push({header:header,key:key,width:width,outlineLevel:outlineLevel});
+      return Promise.resolve(true);
   }
   
   @rpsAction({verbName:'for-each-column-cell'})
@@ -134,6 +156,12 @@ export default class RPSModule {
   async  addRows(ctx:RpsContext,opts:Object, sheetname:string|number,datas:any) : Promise<void>{
     let sheet = this.getWorksheet(ctx,sheetname);
     return sheet.addRows(datas);
+  }
+
+  @rpsAction({verbName:'worksheet-set-cell'})
+  async  setCell(ctx:RpsContext,opts:Object, sheetname:string|number,cellPosition:string, value:any) : Promise<void>{
+    let sheet = this.getWorksheet(ctx,sheetname);
+    // sheet.getCell
   }
 
   @rpsAction({verbName:'worksheet-append-column'})
