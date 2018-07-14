@@ -81,21 +81,27 @@ m.describe('exceljs', () => {
     // });
 
     // await md.appendColumn(ctx,{formula:'A1'},'SalesOrders','WonderFormula');
-    // await md.appendColumn(ctx,{formula:'A$col'},'SalesOrders','WonderFormula2');
+    await md.appendColumn(ctx,{
+      fontColor:'FF112266',bgColor:'FF11DD22',fillType:'solid',
+      formula:'IF(B$row="East","East Side","No Side")'},'SalesOrders','Which Side');
 
-    let ws = await md.addWorksheet(ctx,{},'NewSheet');
+    await md.setCell(ctx,{fontColor:'FF11AA11'},'SalesOrders','C1');
+    await md.setCell(ctx,{
+      bgColor:'99111122',fillType:'pattern',fillPattern:'lightGray'
+    },'SalesOrders','D1');
+    // let ws = await md.addWorksheet(ctx,{},'NewSheet');
     
     // await md.addHeader(ctx,{},'NewSheet','ID','id');
     // await md.addHeader(ctx,{},'NewSheet','Unit No');
     // await md.addHeader(ctx,{},'NewSheet','Desc','description');
     // await md.addHeader(ctx,{},'NewSheet','Weird','weird');
-    await md.addHeaders(ctx,{},'NewSheet',['id','name','description']);
+    // await md.addHeaders(ctx,{},'NewSheet',['id','name','description']);
 
     // await md.addRow(ctx,{},'NewSheet',[1,'hello','world']);
-    await md.addRow(ctx,{},'NewSheet',{id:1,name:'hello',weird:'world'});
-    await md.addRows(ctx,{},'NewSheet',[
-      {id:2,'Unit No':'hello2',description:'world2'},
-      {id:3,name:'hello3',description:'world3'}]);
+    // await md.addRow(ctx,{},'NewSheet',{id:1,name:'hello',weird:'world'});
+    // await md.addRows(ctx,{},'NewSheet',[
+    //   {id:2,'Unit No':'hello2',description:'world2'},
+    //   {id:3,name:'hello3',description:'world3'}]);
 
     //write to result
     await workbook.xlsx.writeFile(WRITE_XLSX);

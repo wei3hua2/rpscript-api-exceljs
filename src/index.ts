@@ -159,9 +159,89 @@ export default class RPSModule {
   }
 
   @rpsAction({verbName:'worksheet-set-cell'})
-  async  setCell(ctx:RpsContext,opts:Object, sheetname:string|number,cellPosition:string, value:any) : Promise<void>{
-    let sheet = this.getWorksheet(ctx,sheetname);
-    // sheet.getCell
+  async  setCell(ctx:RpsContext,opts:Object, sheetname:string|number,cellPosition:string, value?:any) : Promise<void>{
+    let cell:Cell = this.getWorksheet(ctx,sheetname).getCell(cellPosition);
+    let formula = opts['formula'], numFmt = opts['numberFormat'];
+    
+
+    if(value) cell.value = value;
+    if(formula) cell.value = cell.value = { formula: formula, result: value || '?'};
+
+    if(numFmt) cell.numFmt = numFmt;
+    
+    let font = this.parseFont(opts);
+    let alignment = this.parseAlignment(opts);
+    let border = this.parseBorder(opts);
+    let fill = this.parseFill(opts);
+
+    if(font) cell.font = font;
+    if(alignment) cell.alignment = alignment;
+    if(border) cell.border = border;
+    if(fill) cell.fill = fill;
+  }
+
+  private parseFont (opts:Object) {
+
+    let font = {
+      name : opts['fontName'],
+      family : opts['fontFamily'],
+      size : opts['fontSize'],
+      underline : opts['fontUnderline'],
+      bold : opts['fontBold'],
+      italic : opts['fontItalic'],
+      strike : opts['fontStrike'],
+      outline : opts['fontOutline'],
+      color : opts['fontColor'] ? {argb: opts['fontColor']} : undefined
+    };
+
+    font = R.reject(R.isNil,font);
+
+    if(R.keys(font).length === 0) return undefined;
+    else return font;
+  }
+
+  private parseAlignment (opts:Object) {
+
+    let alignment = {
+      horizontal : opts['horizontal'],
+      vertical : opts['vertical'],
+      wrapText : opts['wrapText'],
+      indent : opts['indent'],
+      readingOrder : opts['readingOrder'],
+      textRotation : opts['textRotation']
+    };
+
+    alignment = R.reject(R.isNil,alignment);
+
+    if(R.keys(alignment).length === 0) return undefined;
+    else return alignment;
+  }
+
+  private parseBorder (opts:Object) {
+    let border = {
+      top : {style:opts['topStyle'],color:opts['topColor']},
+      bottom : {style:opts['bottomStyle'],color:opts['bottomColor']},
+      left : {style:opts['leftStyle'],color:opts['leftColor']},
+      right : {style:opts['rightStyle'],color:opts['rightColor']}
+    };
+
+    border = R.reject(R.isNil,border);
+
+    if(R.keys(border).length === 0) return undefined;
+    else return border;
+  }
+  private parseFill (opts:Object) {
+    let fill = {
+      type: opts['fillType'],
+      pattern:opts['fillPattern'],
+      fgColor : opts['fgColor'] ? {argb: opts['fgColor']} : undefined,
+      bgColor : opts['bgColor'] ? {argb: opts['bgColor']} : undefined
+    }
+
+    fill = R.reject(R.isNil,fill);
+
+    if(R.keys(fill).length === 0) return undefined;
+    else return fill;
   }
 
   @rpsAction({verbName:'worksheet-append-column'})
@@ -171,21 +251,30 @@ export default class RPSModule {
 
     let formula = opts['formula'], numFmt = opts['numberFormat'], width = opts['width'];
     let sheet:Worksheet = this.getWorksheet(ctx,sheetname);
-    let colPosition = sheet.actualColumnCount;
+    let colPosition = sheet.actualColumnCount+1;
 
     let result = [columnName];
     result = result.concat(await this.setColumnData(sheet,data));
     
-    sheet.spliceColumns(colPosition+1,0,result);
+    sheet.spliceColumns(colPosition,0,result);
 
     //update formula
     this.setFormula(sheet,formula);
     
-    if(numFmt)
-      sheet.getColumn(colPosition).numFmt = numFmt;
+    if(numFmt) sheet.getColumn(colPosition).numFmt = numFmt;
     
     sheet.getColumn(colPosition).width = width || 20;
+
     
+    let font = this.parseFont(opts);
+    let alignment = this.parseAlignment(opts);
+    let border = this.parseBorder(opts);
+    let fill = this.parseFill(opts);
+
+    if(font) sheet.getColumn(colPosition).font = font;
+    if(alignment) sheet.getColumn(colPosition).alignment = alignment;
+    if(border) sheet.getColumn(colPosition).border = border;
+    if(fill) sheet.getColumn(colPosition).fill = fill;
   }
 
   private async setColumnData (sheet:Worksheet,data?:string|number|Function|Array<any>) :Promise<Array<any>>{
